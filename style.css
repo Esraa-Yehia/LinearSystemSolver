@@ -1,0 +1,135 @@
+/* ====== CSS Styles (Light Mode - Black and White) ====== */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f8f8f8;
+    color: #333;
+    margin: 0;
+    padding: 20px;
+}
+
+h1, h2 {
+    color: #000;
+    border-bottom: 2px solid #ccc;
+    padding-bottom: 5px;
+}
+
+.controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
+.controls label, .controls input, .controls select {
+    margin-right: 5px;
+}
+
+.controls button {
+    background-color: #333;
+    color: #f8f8f8;
+    border: 1px solid #333;
+    padding: 10px 15px;
+    cursor: pointer;
+    border-radius: 5px;
+    transition: background-color 0.3s;
+}
+
+.controls button:hover {
+    background-color: #555;
+}
+
+/* Matrix Input Styling */
+.matrix-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    max-width: fit-content;
+    background-color: #fff;
+}
+
+.matrix-row {
+    display: flex;
+}
+
+.matrix-row input {
+    width: 60px;
+    padding: 8px;
+    margin: 2px;
+    text-align: center;
+    border: 1px solid #ddd;
+    background-color: #fff;
+    color: #333;
+    border-radius: 4px;
+}
+
+/* Step Display Styling */
+.step-item {
+    background-color: #fff;
+    padding: 15px;
+    margin-bottom: 10px;
+    border-radius: 5px;
+    border: 1px solid #ddd;
+    border-left: 5px solid #000;
+}
+
+.operation-text {
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 10px;
+    display: block;
+}
+
+.matrix-display {
+    display: grid;
+    gap: 5px;
+    padding: 10px;
+    background-color: #f0f0f0;
+    border-radius: 4px;
+    max-width: fit-content;
+}
+
+.matrix-cell {
+    text-align: center;
+    padding: 5px 10px;
+    border: 1px solid #ccc;
+    color: #333;
+}
+
+.final-result {
+    font-size: 1.2em;
+    font-weight: bold;
+    color: #000;
+    margin-top: 20px;
+    white-space: pre-wrap;
+}
+
+.result-type {
+    color: #cc0000;
+    font-weight: bold;
+}
+
+/* Styling for Back-Substitution Steps */
+.back-sub-step {
+    margin-top: 15px;
+    padding: 10px;
+    border-left: 3px solid #007bff; /* Blue line for solution step */
+    background-color: #e9f0ff;
+    color: #000;
+}
+
+.equation-text {
+    font-style: italic;
+    font-size: 1.1em;
+    margin-bottom: 5px;
+    font-weight: bold; /* Make equation bold */
+}
+
+.solution-line {
+    font-weight: bold;
+    color: #007bff;
+    margin-top: 5px;
+}

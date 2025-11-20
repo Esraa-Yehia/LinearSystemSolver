@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Linear System Solver</title>
+
+    
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <header>
+        <h1>Linear System Solver (Gaussian / Gauss-Jordan)</h1>
+    </header>
+
+    <section>
+        <div class="controls">
+            <div>
+                <label for="num-rows">Number of Rows (m):</label>
+                <input type="number" id="num-rows" value="3" min="1" max="10">
+            </div>
+
+            <div>
+                <label for="total-cols">Number of Columns (A|b):</label>
+                <input type="number" id="total-cols" value="4" min="2" max="11">
+            </div>
+
+            <button onclick="buildMatrix()">Build Matrix</button>
+
+            <hr style="width: 100%; border: 0;">
+
+            <div>
+                <label for="elimination-method">Method:</label>
+                <select id="elimination-method">
+                    <option value="gauss-jordan">Gauss-Jordan</option>
+                    <option value="gaussian">Gaussian</option>
+                </select>
+            </div>
+
+            <button onclick="solveSystem()">Solve</button>
+            <button onclick="clearAll()">Clear</button>
+        </div>
+    </section>
+
+    <hr>
+
+    <section>
+        <h2>Augmented Matrix (A | b)</h2>
+        <div id="matrix-container" class="matrix-grid"></div>
+    </section>
+
+    <hr>
+
+    <section>
+        <h2>Solution Steps</h2>
+        <div id="steps-container">
+            <p>Steps will appear here after clicking "Solve".</p>
+        </div>
+    </section>
+
+    
+    <script src="script.js"></script>
+</body>
+</html>
