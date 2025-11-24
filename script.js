@@ -2,15 +2,35 @@
 const TOLERANCE = 1e-9; 
 
 // Helper function to format numbers: avoids .0000 for integers and formats decimals nicely.
+// دالة تحويل الرقم إلى كسر (Fraction Converter)
 function formatNumber(num) {
-    if (Math.abs(num - Math.round(num)) < TOLERANCE) {
+    // 1. لو الرقم صفر
+    if (Math.abs(num) < 1e-9) return "0";
+
+    // 2. لو الرقم صحيح (integer)
+    if (Math.abs(num - Math.round(num)) < 1e-9) {
         return Math.round(num).toString();
     }
-    return num.toFixed(4).replace(/\.?0+$/, "");
+
+    // 3. محاولة العثور على كسر (Fraction Search)
+    // نجرب المقامات من 2 لحد 100
+    for (let d = 2; d <= 100; d++) {
+        let n = num * d;
+        // لو البسط قريب جدا من رقم صحيح
+        if (Math.abs(n - Math.round(n)) < 1e-5) {
+            return `${Math.round(n)}/${d}`;
+        }
+    }
+
+    // 4. لو فشل التحويل لكسر، نعرضه عشري مقرب لرقمين
+    return Number(num.toFixed(2)).toString();
 }
 
 // Helper function to construct clean operation text
 function getOperationText(row1, row2, factor, opType) {
+    // استخدام الثابت TOLERANCE لو معرفاه فوق، أو استبدليه بـ 1e-9 مباشرة
+    const TOLERANCE = 1e-9; 
+
     if (Math.abs(factor) < TOLERANCE && opType !== 'swap') { 
         return ''; 
     }
@@ -20,7 +40,10 @@ function getOperationText(row1, row2, factor, opType) {
     }
 
     if (opType === 'multiply') {
-        return `R${row1} = ${formatNumber(factor)} * R${row1}`;
+        // استخدام () حول الكسر لو كان سالب عشان الشكل يبقى أوضح في المعادلة
+        let factorStr = formatNumber(factor);
+        if (factor < 0 && factorStr.includes('/')) factorStr = `(${factorStr})`;
+        return `R${row1} = ${factorStr} * R${row1}`;
     }
 
     let factorAbs = Math.abs(factor);

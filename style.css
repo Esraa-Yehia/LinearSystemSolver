@@ -97,6 +97,7 @@ h1, h2 {
     padding: 5px 10px;
     border: 1px solid #ccc;
     color: #333;
+    min-width: 40px; /* <--- ضيفي السطر ده عشان الكسر ياخد راحته */
 }
 
 .final-result {
