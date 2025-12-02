@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gaussian Elimination Solver (Textbook Style)</title>
+    <style>
+        /* ====== CSS Styles (Light Mode - Black and White) ====== */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f8f8;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1, h2 {
+            color: #000;
+            border-bottom: 2px solid #ccc;
+            padding-bottom: 5px;
+        }
+
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .controls label, .controls input, .controls select {
+            margin-right: 5px;
+        }
+
+        .controls button {
+            background-color: #333;
+            color: #f8f8f8;
+            border: 1px solid #333;
+            padding: 10px 15px;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+
+        .controls button:hover {
+            background-color: #555;
+        }
+
+        /* Matrix Input Styling */
+        .matrix-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            max-width: fit-content;
+            background-color: #fff;
+        }
+
+        .matrix-row {
+            display: flex;
+        }
+
+        .matrix-row input {
+            width: 60px;
+            padding: 8px;
+            margin: 2px;
+            text-align: center;
+            border: 1px solid #ddd;
+            background-color: #fff;
+            color: #333;
+            border-radius: 4px;
+        }
+
+        /* Step Display Styling */
+        .step-item {
+            background-color: #fff;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+            border-left: 5px solid #000;
+        }
+
+        .operation-text {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+            display: block;
+        }
+
+        .matrix-display {
+            display: grid;
+            gap: 5px;
+            padding: 10px;
+            background-color: #f0f0f0;
+            border-radius: 4px;
+            max-width: fit-content;
+        }
+
+        .matrix-cell {
+            text-align: center;
+            padding: 5px 10px;
+            border: 1px solid #ccc;
+            color: #333;
+            min-width: 40px; /* Ensure space for fractions */
+        }
+
+        .final-result {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #000;
+            margin-top: 20px;
+            white-space: pre-wrap;
+        }
+        
+        .result-type {
+            color: #cc0000;
+            font-weight: bold;
+        }
+        
+        /* Styling for Back-Substitution Steps */
+        .back-sub-step {
+            margin-top: 15px;
+            padding: 10px;
+            border-left: 3px solid #007bff; 
+            background-color: #e9f0ff;
+            color: #000;
+        }
+        .equation-text {
+            font-style: italic;
+            font-size: 1.1em;
+            margin-bottom: 5px;
+            font-weight: bold; 
+        }
+        .solution-line {
+            font-weight: bold;
+            color: #007bff;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Linear System Solver (Step-by-Step)</h1>
+    </header>
+
+    <section>
+        <div class="controls">
+            <div>
+                <label for="num-rows">Number of Rows (Equations m):</label>
+                <input type="number" id="num-rows" value="3" min="1" max="10">
+            </div>
+            <div>
+                <label for="total-cols">Total Columns (A|b):</label>
+                <input type="number" id="total-cols" value="4" min="2" max="11">
+            </div>
+            <button onclick="buildMatrix()">Build Matrix</button>
+            <hr style="width: 100%; border: 0;">
+            <div>
+                <label for="elimination-method">Select Method:</label>
+                <select id="elimination-method">
+                    <option value="gauss-jordan">Gauss-Jordan Elimination (RREF)</option>
+                    <option value="gaussian">Gaussian Elimination (REF + Back-Sub)</option>
+                </select>
+            </div>
+            <button onclick="solveSystem()">Solve</button>
+            <button onclick="clearAll()">Clear</button>
+        </div>
+    </section>
+
+    <hr>
+
+    <section>
+        <h2>Augmented Matrix (A | b)</h2>
+        <div id="matrix-container" class="matrix-grid">
+            </div>
+    </section>
+
+    <hr>
+
+    <section>
+        <h2>Solution Steps and Results</h2>
+        <div id="steps-container">
+            <p>Steps will appear here after clicking "Solve".</p>
+        </div>
+    </section>
+
+    <script>
+        const TOLERANCE = 1e-9; 
+
+        // ====== Fraction Converter ======
+        function formatNumber(num) {
+            if (Math.abs(num) < TOLERANCE) return "0";
+            if (Math.abs(num - Math.round(num)) < TOLERANCE) {
+                return Math.round(num).toString();
+            }
+            for (let d = 2; d <= 100; d++) {
+                let n = num * d;
+                if (Math.abs(n - Math.round(n)) < 1e-5) {
+                    return `${Math.round(n)}/${d}`;
+                }
+            }
+            return Number(num.toFixed(2)).toString();
+        }
+
+        function getOperationText(row1, row2, factor, opType) {
+            if (Math.abs(factor) < TOLERANCE && opType !== 'swap') return ''; 
+            
+            if (opType === 'swap') {
+                return `Swap R${row1} <-> R${row2}`;
+            }
+
+            if (opType === 'multiply') {
+                let factorStr = formatNumber(factor);
+                if (factor < 0 && factorStr.includes('/')) factorStr = `(${factorStr})`;
+                // R1 = (1/5) * R1
+                return `R${row1} = ${factorStr} * R${row1} (Make Pivot 1)`;
+            }
+
+            let factorAbs = Math.abs(factor);
+            let sign = factor > 0 ? '-' : '+';
+            
+            let factorString = formatNumber(factorAbs);
+            if (Math.abs(factorAbs - 1) < TOLERANCE) {
+                factorString = ''; 
+            }
+
+            return `R${row1} = R${row1} ${sign} ${factorString} R${row2}`;
+        }
+
+        function displayMatrix(matrix, M, N, container) {
+            const grid = document.createElement('div');
+            grid.className = 'matrix-display';
+            grid.style.gridTemplateColumns = `repeat(${N + 1}, auto)`; 
+
+            for (let i = 0; i < M; i++) {
+                for (let j = 0; j < N + 1; j++) {
+                    const cell = document.createElement('div');
+                    if (matrix[i] && matrix[i][j] !== undefined) {
+                        cell.textContent = formatNumber(matrix[i][j]); 
+                    } else {
+                         cell.textContent = '';
+                    }
+                    cell.className = 'matrix-cell';
+
+                    if (j === N) {
+                        cell.style.borderLeft = '3px solid #000';
+                    }
+                    grid.appendChild(cell);
+                }
+            }
+            container.appendChild(grid);
+        }
+
+        function displayStep(operation, matrix, M, N) {
+            if (operation === "") return;
+            const stepsContainer = document.getElementById('steps-container');
+            const stepDiv = document.createElement('div');
+            stepDiv.className = 'step-item';
+            const operationText = document.createElement('span');
+            operationText.className = 'operation-text';
+            operationText.textContent = operation;
+            stepDiv.appendChild(operationText);
+            displayMatrix(matrix, M, N, stepDiv);
+            stepsContainer.appendChild(stepDiv);
+        }
+
+        function buildMatrix() {
+            const M = parseInt(document.getElementById('num-rows').value); 
+            const TotalCols = parseInt(document.getElementById('total-cols').value);
+            const N = TotalCols - 1; 
+            
+            const container = document.getElementById('matrix-container');
+            container.innerHTML = ''; 
+
+            if (M < 1 || N < 1 || M > 10 || TotalCols > 11) {
+                alert("Please ensure rows (1-10) and total columns (2-11) are within limits, and total columns > 1.");
+                return;
+            }
+
+            for (let i = 0; i < M; i++) {
+                const rowDiv = document.createElement('div');
+                rowDiv.className = 'matrix-row';
+
+                for (let j = 0; j < N; j++) {
+                    const input = document.createElement('input');
+                    input.type = 'number';
+                    input.id = `A-${i}-${j}`;
+                    input.placeholder = `A[${i+1}, ${j+1}]`;
+                    rowDiv.appendChild(input);
+                }
+
+                const bInput = document.createElement('input');
+                bInput.type = 'number';
+                bInput.id = `b-${i}`;
+                bInput.placeholder = `b[${i+1}]`;
+                bInput.style.borderLeft = '3px solid #000'; 
+                rowDiv.appendChild(bInput);
+                
+                container.appendChild(rowDiv);
+            }
+            document.getElementById('steps-container').innerHTML = '';
+        }
+
+        function getMatrix(M, N) {
+            const matrix = [];
+            let allFieldsFilled = true;
+            for (let i = 0; i < M; i++) {
+                const row = [];
+                for (let j = 0; j < N; j++) {
+                    const inputElement = document.getElementById(`A-${i}-${j}`);
+                    const value = parseFloat(inputElement ? inputElement.value : NaN);
+                    if (isNaN(value)) allFieldsFilled = false;
+                    row.push(value);
+                }
+                const bElement = document.getElementById(`b-${i}`);
+                const bValue = parseFloat(bElement ? bElement.value : NaN);
+                if (isNaN(bValue)) allFieldsFilled = false;
+                row.push(bValue);
+                matrix.push(row);
+            }
+            if (!allFieldsFilled) return null;
+            return matrix;
+        }
+
+        // ====== دالة Forward Elimination (تم التعديل لتتبع الترتيب الأكاديمي: اجعل 1 ثم صفر) ======
+        function forwardElimination(M, N, matrix, stepsContainer) {
+            let currentPivotRow = 0;
+
+            for (let j = 0; j < N && currentPivotRow < M; j++) { 
+
+                // 1. التعامل مع الأصفار (التبديل فقط إذا كان العنصر الحالي 0)
+                if (Math.abs(matrix[currentPivotRow][j]) < TOLERANCE) {
+                    let swapRow = -1;
+                    for (let i = currentPivotRow + 1; i < M; i++) {
+                        if (Math.abs(matrix[i][j]) > TOLERANCE) {
+                            swapRow = i;
+                            break;
+                        }
+                    }
+                    if (swapRow !== -1) {
+                        [matrix[currentPivotRow], matrix[swapRow]] = [matrix[swapRow], matrix[currentPivotRow]];
+                        displayStep(getOperationText(currentPivotRow + 1, swapRow + 1, 0, 'swap'), matrix, M, N);
+                    } else {
+                        // العمود كله أصفار، ننتقل للعمود التالي
+                        continue;
+                    }
+                }
+
+                // 2. Normalization (أهم خطوة: جعل الـ Pivot يساوي 1 فوراً)
+                // إذا كان العنصر لا يساوي 1، نقسم الصف كله عليه
+                let pivotVal = matrix[currentPivotRow][j];
+                if (Math.abs(pivotVal - 1) > TOLERANCE) {
+                    let factor = 1 / pivotVal;
+                    let operation = getOperationText(currentPivotRow + 1, 0, factor, 'multiply');
+                    
+                    for (let k = j; k < N + 1; k++) {
+                        matrix[currentPivotRow][k] = matrix[currentPivotRow][k] * factor;
+                    }
+                    displayStep(operation, matrix, M, N);
+                }
+
+                // 3. Elimination (تصفير ما تحت الـ 1)
+                // بما أن الـ Pivot أصبح 1، العملية الحسابية أسهل وتظهر بالترتيب
+                for (let i = currentPivotRow + 1; i < M; i++) {
+                    let factor = matrix[i][j]; // العامل هو نفس قيمة الرقم الذي نريد تصفيره (لأن الـ Pivot بـ 1)
+                    
+                    if (Math.abs(factor) < TOLERANCE) continue; 
+
+                    let operation = getOperationText(i + 1, currentPivotRow + 1, factor, 'subtract');
+
+                    for (let k = j; k < N + 1; k++) {
+                        matrix[i][k] = matrix[i][k] - factor * matrix[currentPivotRow][k];
+                    }
+                    displayStep(operation, matrix, M, N);
+                }
+                
+                currentPivotRow++;
+            }
+            return currentPivotRow; 
+        }
+        // =========================================================================
+
+        function backwardElimination(M, N, matrix, stepsContainer) {
+             let pivotCols = [];
+            for (let i = 0; i < M; i++) {
+                for (let j = 0; j < N; j++) {
+                    if (Math.abs(matrix[i][j] - 1) < TOLERANCE) {
+                        pivotCols.push({row: i, col: j});
+                        break;
+                    }
+                }
+            }
+
+            for (const {row: i, col: j} of pivotCols) {
+                for (let k = i - 1; k >= 0; k--) {
+                    let factor = matrix[k][j]; 
+                    
+                    if (Math.abs(factor) < TOLERANCE) continue;
+
+                    let operation = getOperationText(k + 1, i + 1, factor, 'subtract');
+
+                    for (let l = j; l < N + 1; l++) {
+                        matrix[k][l] = matrix[k][l] - factor * matrix[i][l];
+                    }
+                    displayStep(operation, matrix, M, N);
+                }
+            }
+        }
+        
+        function getEquationString(matrixRow, N) {
+            let eq = '';
+            let isFirstTerm = true;
+            for (let j = 0; j < N; j++) {
+                let coeff = matrixRow[j];
+                if (Math.abs(coeff) < TOLERANCE) continue; 
+                let coeffSign = coeff > 0 ? '+' : '-';
+                let coeffAbs = Math.abs(coeff);
+                let coeffText = formatNumber(coeffAbs);
+                
+                if (isFirstTerm) {
+                    coeffSign = coeff > 0 ? '' : '-';
+                    isFirstTerm = false;
+                } else if (coeff > 0) {
+                    coeffSign = ' + ';
+                } else {
+                    coeffSign = ' - ';
+                }
+                
+                if (Math.abs(coeffAbs - 1) < TOLERANCE) {
+                    coeffText = '';
+                }
+                eq += `${coeffSign}${coeffText}x${j + 1}`;
+            }
+            eq += ` = ${formatNumber(matrixRow[N])}`;
+            return eq.trim().replace(/^\+\s*/, '');
+        }
+
+        function backSubstitution(M, N, matrix, stepsContainer) {
+            stepsContainer.innerHTML += '<h3>4. Back-Substitution:</h3>';
+            
+            const solution = new Array(N).fill(0);
+            
+            let pivotRows = [];
+            for (let i = 0; i < M; i++) {
+                let firstNonZeroCol = -1;
+                for (let j = 0; j < N; j++) {
+                    if (Math.abs(matrix[i][j] - 1) < TOLERANCE) { 
+                        firstNonZeroCol = j;
+                        break;
+                    }
+                }
+                if (firstNonZeroCol !== -1) {
+                    pivotRows.push({row: i, col: firstNonZeroCol});
+                }
+            }
+            
+            for (let k = pivotRows.length - 1; k >= 0; k--) {
+                const {row: i, col: j} = pivotRows[k]; 
+                
+                let rhs = matrix[i][N];
+                let equation = getEquationString(matrix[i], N); 
+
+                for (let l = j + 1; l < N; l++) {
+                    rhs -= matrix[i][l] * solution[l];
+                }
+
+                solution[j] = rhs;
+                
+                const stepDiv = document.createElement('div');
+                stepDiv.className = 'back-sub-step';
+                
+                let equationDisplay = `<div class="equation-text">Equation R${i+1}: ${equation}</div>`;
+                let finalSolution = `<div class="solution-line">X${j+1} = ${formatNumber(solution[j])}</div>`;
+
+                stepDiv.innerHTML = equationDisplay + finalSolution;
+                stepsContainer.appendChild(stepDiv);
+            }
+            return solution;
+        }
+
+        function interpretResults(M, N, matrix, stepsContainer, method) {
+            let pivotCols = [];
+            let resultText = '';
+            let consistent = true;
+            let finalSolution = new Array(N).fill(0); 
+            
+            for (let i = 0; i < M; i++) {
+                let isZeroRow = true;
+                let pivotJ = -1;
+                
+                for (let j = 0; j < N; j++) {
+                    if (Math.abs(matrix[i][j]) >= TOLERANCE) {
+                        isZeroRow = false;
+                        if (pivotJ === -1) {
+                            pivotJ = j;
+                        }
+                    }
+                }
+                
+                if (pivotJ !== -1) {
+                    pivotCols.push(pivotJ);
+                }
+
+                if (isZeroRow && Math.abs(matrix[i][N]) >= TOLERANCE) {
+                    consistent = false;
+                    break;
+                }
+            }
+            
+            if (!consistent) {
+                resultText = 'The system is <span class="result-type">Inconsistent</span>. No solution exists.';
+            } else if (pivotCols.length < N) {
+                resultText = `The system has <span class="result-type">Infinite Solutions</span>. (Number of free variables: ${N - pivotCols.length})`;
+                
+                let basicVars = pivotCols.map(j => `X${j + 1}`);
+                let freeVars = Array.from({length: N}, (_, j) => j).filter(j => !pivotCols.includes(j)).map(j => `X${j + 1}`);
+
+                let solutionString = `\nBasic Variables (Dependent): ${basicVars.join(', ')}\n`;
+                solutionString += `Free Variables (Independent): ${freeVars.join(', ')} (Can be any value)\n`;
+                resultText += solutionString;
+
+            } else { 
+                resultText = 'The system has a <span class="result-type">Unique Solution</span>:';
+                
+                if (method === 'gaussian') {
+                    finalSolution = backSubstitution(M, N, matrix, stepsContainer);
+                } else { 
+                    for (let i = 0; i < N; i++) {
+                        let pivotRow = -1;
+                        for (let r = 0; r < M; r++) {
+                            if (pivotCols.includes(i) && Math.abs(matrix[r][i] - 1) < TOLERANCE) {
+                                pivotRow = r;
+                                break;
+                            }
+                        }
+                        if (pivotRow !== -1) {
+                            finalSolution[i] = matrix[pivotRow][N];
+                        }
+                    }
+                }
+                
+                let solutionString = '\n';
+                for (let i = 0; i < N; i++) {
+                    solutionString += `X${i+1} = ${formatNumber(finalSolution[i])}\n`;
+                }
+                resultText += solutionString;
+            }
+
+            const resultDiv = document.createElement('div');
+            resultDiv.className = 'final-result';
+            resultDiv.innerHTML = resultText;
+            stepsContainer.appendChild(resultDiv);
+        }
+
+        function solveSystem() {
+            const M = parseInt(document.getElementById('num-rows').value);
+            const TotalCols = parseInt(document.getElementById('total-cols').value);
+            const N = TotalCols - 1;
+            const method = document.getElementById('elimination-method').value;
+
+            const matrix = getMatrix(M, N); 
+            const stepsContainer = document.getElementById('steps-container');
+            stepsContainer.innerHTML = '';
+            
+            if (document.getElementById('A-0-0') === null) {
+                stepsContainer.innerHTML += '<p class="final-result" style="color: red;">Please click "Build Matrix" first.</p>';
+                return;
+            }
+
+            if (!matrix) {
+                stepsContainer.innerHTML += '<p class="final-result" style="color: red;">Input Error. Please fill all fields with correct numbers.</p>';
+                return;
+            }
+            
+            stepsContainer.innerHTML += `<h3>Solving using ${method === 'gaussian' ? 'Gaussian Elimination' : 'Gauss-Jordan Elimination'}:</h3>`;
+            stepsContainer.innerHTML += '<h3>1. Initial Augmented Matrix:</h3>';
+            displayMatrix(matrix, M, N, stepsContainer);
+
+            forwardElimination(M, N, matrix, stepsContainer);
+            
+            if (method === 'gauss-jordan') {
+                stepsContainer.innerHTML += '<h3>2. Backward Elimination (To RREF):</h3>';
+                backwardElimination(M, N, matrix, stepsContainer);
+                stepsContainer.innerHTML += '<h3>3. Final Reduced Row Echelon Form (RREF):</h3>';
+            } else {
+                stepsContainer.innerHTML += '<h3>2. Final Row Echelon Form (REF):</h3>';
+            }
+            
+            displayMatrix(matrix, M, N, stepsContainer);
+
+            interpretResults(M, N, matrix, stepsContainer, method);
+        }
+
+        function clearAll() {
+            document.getElementById('matrix-container').innerHTML = '';
+            document.getElementById('steps-container').innerHTML = '';
+            document.getElementById('num-rows').value = '3';
+            document.getElementById('total-cols').value = '4'; 
+            buildMatrix(); 
+        }
+
+        window.onload = buildMatrix;
+    </script>
+</body>
+</html>

@@ -7,7 +7,7 @@ body {
     padding: 20px;
 }
 
-h1, h2 {
+h1, h2, h3 {
     color: #000;
     border-bottom: 2px solid #ccc;
     padding-bottom: 5px;
@@ -90,6 +90,7 @@ h1, h2 {
     background-color: #f0f0f0;
     border-radius: 4px;
     max-width: fit-content;
+    overflow-x: auto;
 }
 
 .matrix-cell {
@@ -97,7 +98,12 @@ h1, h2 {
     padding: 5px 10px;
     border: 1px solid #ccc;
     color: #333;
-    min-width: 40px; /* <--- ضيفي السطر ده عشان الكسر ياخد راحته */
+    min-width: 40px;
+    white-space: nowrap;
+    background: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .final-result {
@@ -113,24 +119,57 @@ h1, h2 {
     font-weight: bold;
 }
 
-/* Styling for Back-Substitution Steps */
+/* Styling for Back-Substitution steps */
 .back-sub-step {
     margin-top: 15px;
     padding: 10px;
-    border-left: 3px solid #007bff; /* Blue line for solution step */
+    border-left: 3px solid #007bff; 
     background-color: #e9f0ff;
     color: #000;
 }
-
 .equation-text {
     font-style: italic;
     font-size: 1.1em;
     margin-bottom: 5px;
-    font-weight: bold; /* Make equation bold */
+    font-weight: bold; 
 }
-
 .solution-line {
     font-weight: bold;
     color: #007bff;
     margin-top: 5px;
+}
+
+/* New Styles for Equation View (A * X = B) */
+.equation-container {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    overflow-x: auto;
+    padding: 10px;
+    background: #fff;
+    border-radius: 5px;
+    border: 1px solid #ddd;
+}
+.matrix-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+.matrix-label {
+    font-weight: bold;
+    margin-bottom: 5px;
+    font-size: 0.9em;
+    color: #555;
+}
+.operator {
+    font-size: 2em;
+    font-weight: bold;
+    color: #333;
+}
+/* Style for calculation steps inside matrix cells */
+.calc-cell {
+    font-size: 0.85em;
+    color: #555;
+    padding: 8px;
+    text-align: left;
 }
